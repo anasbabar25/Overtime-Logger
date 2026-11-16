@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a plant-floor work order. Header strip, tab rail, one working column (max 1080px). Phone first. */
+:root{
+  --bg:#f3f5f6; --surface:#ffffff; --surface-2:#eaeef0; --line:#d3dade;
+  --fg:#16212a; --muted:#5a6872;
+  --accent:#0b6a86; --accent-ink:#ffffff; --accent-soft:#dcedf2;
+  --ok:#1d7a45; --ok-soft:#dff1e6; --bad:#b3332b; --bad-soft:#f8e1df; --wait:#9a6200; --wait-soft:#fbefd6;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:6px; color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px;flex-wrap:wrap}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:24px;margin:0;line-height:1.1}
+.brand span{font-size:12px;color:var(--muted)}
+.role{font:inherit;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:6px 12px;border-radius:99px;background:var(--accent-soft);color:var(--accent);border:0;cursor:pointer}
+nav.tabs{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+nav.tabs .wrap{display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+nav.tabs button{font-family:var(--f-display);font-weight:600;font-size:16px;background:none;border:0;color:var(--muted);padding:12px 10px 10px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+nav.tabs .count{font-family:var(--f-mono);font-size:11px;background:var(--wait);color:var(--surface);border-radius:99px;padding:0 6px;line-height:18px}
+main .wrap{padding-block:18px 48px;display:flex;flex-direction:column;gap:16px}
+section{display:flex;flex-direction:column;gap:14px}
+h2{font-family:var(--f-display);font-weight:600;font-size:20px;margin:0}
+.sub{color:var(--muted);margin:0;font-size:13px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.f{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;min-width:0}
+input,select,textarea{font:inherit;font-size:16px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:9px 10px;width:100%;min-width:0}
+textarea{min-height:76px;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn{font:inherit;font-weight:600;font-size:15px;border-radius:4px;padding:10px 14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-block;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.btn.bad{background:transparent;border-color:var(--bad);color:var(--bad)}
+.btn.link{border:0;background:none;color:var(--accent);padding:6px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.spacer{flex:1}
+.emps{display:flex;flex-direction:column;gap:10px}
+.emp{display:grid;grid-template-columns:110px 1fr 90px 180px 40px;gap:8px;align-items:end}
+.emp .x{height:42px;padding:0}
+@media (max-width:720px){.emp{grid-template-columns:1fr 1fr;padding:10px;border:1px dashed var(--line);border-radius:4px}.emp .nm,.emp .rs{grid-column:span 2}.emp .x{width:100%}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;min-width:0;border-left:4px solid var(--line)}
+.card.pending{border-left-color:var(--wait)} .card.approved{border-left-color:var(--ok)} .card.rejected{border-left-color:var(--bad)}
+.card-h{display:flex;gap:6px 10px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--line)}
+.sec{font-family:var(--f-display);font-weight:700;font-size:19px}
+.meta{color:var(--muted);font-size:13px}
+.pill{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;border-radius:99px}
+.pill.pending{background:var(--wait-soft);color:var(--wait)} .pill.approved{background:var(--ok-soft);color:var(--ok)} .pill.rejected{background:var(--bad-soft);color:var(--bad)}
+.card-b{padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card-f{padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.card-f input{flex:1 1 100%}
+.card-f .btn.ok,.card-f .btn.bad{flex:1}
+.note{font-size:14px;background:var(--surface-2);border-radius:4px;padding:8px 10px;white-space:pre-wrap;overflow-wrap:anywhere}
+.note b{font-weight:600;color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;display:block}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:0}
+td input.act{width:74px;padding:5px 6px;text-align:right;font-family:var(--f-mono);font-size:15px}
+.pos{color:var(--bad)} .neg{color:var(--ok)}
+.tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.tile .k{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font-family:var(--f-display);font-weight:700;font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile .s{font-size:12px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.seg button{font:inherit;font-weight:600;border:0;background:var(--surface);color:var(--muted);padding:9px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.empty{text-align:center;color:var(--muted);padding:32px 16px;border:1px dashed var(--line);border-radius:var(--r);background:var(--surface)}
+.empty strong{display:block;color:var(--fg);font-family:var(--f-display);font-size:18px;margin-bottom:4px}
+.day-h{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:4px;font-weight:500;z-index:20;max-width:calc(100% - 32px);text-align:center}
+.err{color:var(--bad);font-size:14px}
+.two{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.list{display:flex;flex-direction:column;gap:12px}
+.loading{color:var(--muted);font-size:13px}
+</style>
+<style>
+@media (min-width:721px){.emp{grid-template-columns:1fr 120px 90px 180px 40px}}
+.combo{position:relative}
+.opts{position:absolute;left:0;right:0;top:100%;z-index:10;margin-top:2px;max-height:min(320px,55vh);overflow:auto;-webkit-overflow-scrolling:touch;background:var(--surface);border:1px solid var(--accent);border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.18);text-transform:none;letter-spacing:0;font-weight:400;color:var(--fg)}
+.opt{display:flex;flex-direction:column;align-items:flex-start;width:100%;padding:9px 12px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;font:inherit;font-size:15px;color:var(--fg);cursor:pointer}
+.opt:hover,.opt:focus{background:var(--accent-soft)}
+.opt small{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.og{position:sticky;top:0;background:var(--surface-2);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:5px 12px}
+.oh{font-size:12px;color:var(--muted);padding:6px 12px}
+.empno{font-family:var(--f-mono);background:var(--surface-2)}
+@media (max-width:720px){.emp .en{grid-column:span 2}}
+.auth{max-width:460px}
+.who{font-size:12px;font-weight:600;color:var(--accent)}
+.mine{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand"><h1>OT Approvals</h1><span>Overtime pre-approval · Operations</span></div>
+  <button class="role" id="role" hidden></button>
+</div></header>
+
+<nav class="tabs"><div class="wrap" role="tablist">
+  <button role="tab" data-tab="new">New request</button>
+  <button role="tab" data-tab="queue">Approvals <span class="count" id="qcount" hidden>0</span></button>
+  <button role="tab" data-tab="log">Log</button>
+  <button role="tab" data-tab="report">Reports</button>
+</div></nav>
+
+<main><div class="wrap">
+
+<section id="tab-new" hidden>
+  <form class="panel" id="reqForm" novalidate>
+    <div><h2>Overtime pre-approval request</h2><p class="sub">Fill before the OT is worked. Enter actual hours next day from the Log.</p></div>
+    <div class="grid">
+      <label class="f">Date of OT<input type="date" id="fDate"></label>
+      <label class="f">Section<select id="fSection"></select></label>
+      <label class="f">Approver<select id="fApprover"></select></label>
+      <label class="f" id="pinWrap" hidden>Supervisor PIN<input type="password" inputmode="numeric" id="fPin"></label>
+    </div>
+    <div class="emps" id="emps"></div>
+    <div class="row"><button type="button" class="btn" id="addEmp">+ Add employee</button><span class="spacer"></span><span class="meta" id="fTotal"></span></div>
+    <label class="f">Comments<textarea id="fComments" placeholder="Machine, order no., who is absent, anything the approver should know"></textarea></label>
+    <div class="err" id="fErr" hidden></div>
+    <div class="row end"><button type="submit" class="btn primary" id="fSubmit" style="flex:1;max-width:320px">Send for approval</button></div>
+  </form>
+</section>
+
+<section id="tab-queue" hidden>
+  <!-- not logged in: password-protected -->
+  <form class="panel auth" id="loginForm" hidden novalidate>
+    <div><h2 id="authTitle">Approver login</h2><p class="sub" id="authSub">Approvals are password protected. Your login is remembered on this phone for 30 days.</p></div>
+    <label class="f">Approver<select id="aName"></select></label>
+    <label class="f" id="aCodeWrap" hidden>Setup code<input type="password" id="aCode" autocomplete="off"></label>
+    <label class="f"><span id="aPwLabel">Password</span><input type="password" id="aPw" autocomplete="current-password"></label>
+    <label class="f" id="aPw2Wrap" hidden>Confirm new password<input type="password" id="aPw2" autocomplete="new-password"></label>
+    <div class="err" id="aErr" hidden></div>
+    <div class="row"><button class="btn primary" type="submit" id="aGo">Log in</button><span class="spacer"></span><button class="btn link" type="button" id="aSwitch">Create or reset password</button></div>
+  </form>
+  <!-- account -->
+  <form class="panel auth" id="pwForm" hidden novalidate>
+    <div><h2>Change password</h2><p class="sub">Changing it logs you out on your other phones.</p></div>
+    <label class="f">Current password<input type="password" id="cOld" autocomplete="current-password"></label>
+    <label class="f">New password (6+ characters)<input type="password" id="cNew" autocomplete="new-password"></label>
+    <label class="f">Confirm new password<input type="password" id="cNew2" autocomplete="new-password"></label>
+    <div class="err" id="cErr" hidden></div>
+    <div class="row"><button class="btn primary" type="submit">Change password</button><button class="btn" type="button" id="cCancel">Cancel</button><span class="spacer"></span><button class="btn bad" type="button" id="logoutBtn">Log out</button></div>
+  </form>
+  <div id="queueWrap" hidden style="display:flex;flex-direction:column;gap:14px">
+    <div class="row"><div><h2>Waiting for approval</h2><p class="sub" id="qSub"></p></div><span class="spacer"></span>
+      <button class="btn" id="refresh1">Refresh</button><button class="btn ok" id="approveAll" hidden>Approve all</button></div>
+    <div id="queue" class="list"></div>
+  </div>
+</section>
+
+<section id="tab-log" hidden>
+  <div class="panel"><div class="grid">
+    <label class="f">From<input type="date" id="lFrom"></label>
+    <label class="f">To<input type="date" id="lTo"></label>
+    <label class="f">Section<select id="lSection"></select></label>
+    <label class="f">Status<select id="lStatus"><option value="">All</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></label>
+  </div></div>
+  <div id="log" class="list"></div>
+</section>
+
+<section id="tab-report" hidden>
+  <div class="panel"><div class="row">
+    <div class="seg" role="group" aria-label="Report period"><button type="button" id="mDaily" aria-pressed="true">Daily</button><button type="button" id="mMonthly" aria-pressed="false">Monthly</button></div>
+    <input type="date" id="rDay" style="width:auto">
+    <input type="month" id="rMonth" style="width:auto" hidden>
+    <select id="rSection" style="width:auto"></select>
+    <span class="spacer"></span>
+    <button class="btn primary" id="dlXlsx">Export to Excel</button>
+  </div><div id="exportOut" class="row" hidden></div></div>
+  <div id="report" class="list"></div>
+</section>
+
+</div></main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ---------- server bridge (in-memory stand-in when previewed outside Apps Script) ---------- */
+const LIVE = typeof google !== "undefined" && google.script && google.script.run;
+const call = (fn, ...args) => LIVE
+  ? new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(new Error(e && e.message || String(e))))[fn](...args))
+  : Mock[fn](...args);
+
+const S={cfg:{sections:[],reasons:[],approvers:[],employees:[],staffPinRequired:false},emp:new Map(),reqs:[],tok:null,me:null,tab:null,report:{mode:"daily"},authMode:"login",pwStatus:[]};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=()=>iso(new Date());
+const addDays=(s,n)=>{const d=new Date(s+"T00:00:00");d.setDate(d.getDate()+n);return iso(d)};
+const fmtD=s=>s?`${s.slice(8,10)}.${s.slice(5,7)}.${s.slice(0,4)}`:"";
+const fmtH=n=>(n==null||n==="")?"–":(Math.round(+n*10)/10).toString();
+const sg=v=>(v>0?"+":"")+fmtH(v);
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}};
+function toast(msg){const t=$("toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2800)}
+const totals=r=>{let est=0,act=0,hasAct=false;r.employees.forEach(e=>{est+=num(e.est);if(e.actual!=null){act+=num(e.actual);hasAct=true}});return{est,act,hasAct}};
+const pin=()=>$("fPin").value||store.get("ot.pin")||"";
+function fillSelect(el,items,allLabel){el.innerHTML=(allLabel?`<option value="">${allLabel}</option>`:`<option value="" disabled selected>Choose…</option>`)+items.map(x=>`<option>${esc(x)}</option>`).join("")}
+const showErr=(id,m)=>{$(id).textContent=m;$(id).hidden=!m};
+
+/* ---------- approver auth ---------- */
+function setAuth(tok,name){S.tok=tok;S.me=name;store.set("ot.tok",tok);if(name)store.set("ot.approver",name);
+  $("role").hidden=!name;$("role").textContent=name?`${name} · Account`:"";renderQueueTab()}
+function setAuthMode(m){S.authMode=m;const c=m==="create";
+  $("authTitle").textContent=c?"Create or reset password":"Approver login";
+  $("authSub").textContent=c?"Needs the setup code from the app’s settings (Code.gs). Use this the first time, or if a password is forgotten.":"Approvals are password protected. Your login is remembered on this phone for 30 days.";
+  $("aCodeWrap").hidden=!c;$("aPw2Wrap").hidden=!c;$("aPwLabel").textContent=c?"New password (6+ characters)":"Password";
+  $("aGo").textContent=c?"Save password and log in":"Log in";$("aSwitch").textContent=c?"Back to login":"Create or reset password";showErr("aErr","")}
+$("aSwitch").onclick=()=>setAuthMode(S.authMode==="login"?"create":"login");
+$("aName").addEventListener("change",()=>{const st=S.pwStatus.find(x=>x.name===$("aName").value);if(st&&!st.hasPassword&&S.authMode==="login"){setAuthMode("create");showErr("aErr",`${st.name} has no password yet. Create one with the setup code.`)}});
+$("loginForm").addEventListener("submit",async ev=>{ev.preventDefault();showErr("aErr","");const name=$("aName").value,pw=$("aPw").value;
+  if(!name)return showErr("aErr","Choose your name.");if(!pw)return showErr("aErr","Enter the password.");
+  if(S.authMode==="create"){if(!$("aCode").value)return showErr("aErr","Enter the setup code.");if(pw.length<6)return showErr("aErr","Password must be at least 6 characters.");if(pw!==$("aPw2").value)return showErr("aErr","The two passwords don’t match.")}
+  $("aGo").disabled=true;
+  try{const r=S.authMode==="create"?await call("createPassword",name,$("aCode").value,pw):await call("login",name,pw);
+    ["aPw","aPw2","aCode"].forEach(i=>$(i).value="");setAuthMode("login");setAuth(r.token,r.name);toast(`Logged in as ${r.name}`);load()}
+  catch(e){showErr("aErr",e.message)}finally{$("aGo").disabled=false}});
+$("role").onclick=()=>{setTab("queue");$("pwForm").hidden=!$("pwForm").hidden};
+$("cCancel").onclick=()=>{$("pwForm").hidden=true};
+$("pwForm").addEventListener("submit",async ev=>{ev.preventDefault();showErr("cErr","");const o=$("cOld").value,n=$("cNew").value;
+  if(!o||!n)return showErr("cErr","Fill in all three fields.");if(n.length<6)return showErr("cErr","New password must be at least 6 characters.");if(n!==$("cNew2").value)return showErr("cErr","The new passwords don’t match.");
+  try{const r=await call("changePassword",S.tok,o,n);["cOld","cNew","cNew2"].forEach(i=>$(i).value="");$("pwForm").hidden=true;setAuth(r.token,r.name);toast("Password changed")}
+  catch(e){showErr("cErr",e.message)}});
+$("logoutBtn").onclick=async()=>{try{await call("logout",S.tok)}catch(e){}$("pwForm").hidden=true;setAuth(null,null);toast("Logged out")};
+function authFail(e){if(/expired|Log in again/i.test(e.message)){setAuth(null,null);setTab("queue")}toast(e.message)}
+
+/* ---------- tabs ---------- */
+function setTab(t){S.tab=t;document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));
+  ["new","queue","log","report"].forEach(x=>$("tab-"+x).hidden=x!==t);store.set("ot.tab",t);
+  if(t==="report")loadReport();else if(t!=="new")load();if(t==="queue")renderQueueTab()}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+
+/* ---------- employee picker (type to search all employees) ---------- */
+const norm=t=>String(t||"").toLowerCase().replace(/\s+/g," ").trim();
+function empMatches(q){const sec=$("fSection").value;q=norm(q);
+  const list=S.cfg.employees.filter(e=>!q||norm(e[1]).includes(q)||String(e[0]).includes(q));
+  return list.sort((a,b)=>((b[2]===sec)-(a[2]===sec))||a[1].localeCompare(b[1]))}
+function renderOpts(i){const box=$(`e${i}list`),q=$(`e${i}q`).value;const sec=$("fSection").value;
+  const m=empMatches(q===S.emp.get($(`e${i}emp`).value)?.[1]?"":q);
+  let html=`<div class="oh">${m.length} of ${S.cfg.employees.length} employees${q?"":" · type a name or Emp No to search"}</div>`,last=null;
+  for(const e of m){const g=e[2]===sec?sec:"Other sections";if(g!==last){html+=`<div class="og">${esc(g)}</div>`;last=g}
+    html+=`<button type="button" class="opt" data-emp="${esc(e[0])}"><span>${esc(e[1])}</span><small>${esc(e[0])} · ${esc(e[2])}</small></button>`}
+  if(!m.length)html+=`<div class="oh">No employee matches “${esc(q)}”.</div>`;
+  box.innerHTML=html;box.hidden=false}
+function pickEmp(i,id){const e=S.emp.get(id);$(`e${i}emp`).value=e?e[0]:"";$(`e${i}no`).value=e?e[0]:"";$(`e${i}q`).value=e?e[1]:"";$(`e${i}list`).hidden=true;updTotal()}
+let empSeq=0;
+function addEmpRow(v={}){const i=empSeq++;const d=document.createElement("div");d.className="emp";d.dataset.i=i;
+  d.innerHTML=`<div class="f en combo">Employee<input id="e${i}q" type="text" autocomplete="off" placeholder="Type name or Emp No" aria-label="Employee"><input type="hidden" id="e${i}emp"><div class="opts" id="e${i}list" hidden></div></div>
+  <label class="f no">Emp No<input id="e${i}no" class="empno" readonly tabindex="-1"></label>
+  <label class="f">Est. hrs<input id="e${i}h" type="number" inputmode="decimal" min="0.5" max="16" step="0.5" value="${esc(v.est??4)}"></label>
+  <label class="f rs">Reason<select id="e${i}rs"><option value="" disabled ${v.reason?"":"selected"}>Choose…</option>${S.cfg.reasons.map(r=>`<option ${v.reason===r?"selected":""}>${esc(r)}</option>`).join("")}</select></label>
+  <button type="button" class="btn x" aria-label="Remove employee">✕</button>`;
+  const q=d.querySelector(`#e${i}q`),box=d.querySelector(`#e${i}list`);
+  q.addEventListener("focus",()=>{q.select();renderOpts(i)});
+  q.addEventListener("input",()=>{$(`e${i}emp`).value="";$(`e${i}no`).value="";renderOpts(i)});
+  q.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();const f=box.querySelector(".opt");if(f)pickEmp(i,f.dataset.emp)}else if(ev.key==="Escape")box.hidden=true});
+  q.addEventListener("blur",()=>setTimeout(()=>{if(!d.isConnected)return;box.hidden=true;
+    if(!$(`e${i}emp`).value&&q.value){const m=empMatches(q.value);const exact=m.filter(e=>norm(e[1])===norm(q.value)||e[0]===q.value.trim());if(exact.length===1||m.length===1)pickEmp(i,(exact[0]||m[0])[0])}},180));
+  box.addEventListener("pointerdown",ev=>ev.preventDefault());
+  box.addEventListener("click",ev=>{const o=ev.target.closest(".opt");if(o)pickEmp(i,o.dataset.emp)});
+  d.querySelector(".x").onclick=()=>{if($("emps").children.length>1){d.remove();updTotal()}};
+  d.addEventListener("input",updTotal);d.addEventListener("change",updTotal);$("emps").appendChild(d);if(v.empId)pickEmp(i,v.empId);updTotal()}
+function readEmps(){return[...$("emps").children].map(d=>{const i=d.dataset.i;const id=$(`e${i}emp`).value;return{empId:id,name:S.emp.get(id)?.[1]||"",typed:$(`e${i}q`).value.trim(),est:num($(`e${i}h`).value),reason:$(`e${i}rs`).value}})}
+function updTotal(){const e=readEmps();$("fTotal").textContent=`Total ${fmtH(e.reduce((a,x)=>a+x.est,0))} hrs · ${e.length} employee${e.length>1?"s":""}`}
+$("addEmp").onclick=()=>addEmpRow({reason:readEmps().slice(-1)[0]?.reason});
+$("fSection").addEventListener("change",()=>store.set("ot.section",$("fSection").value));
+function resetForm(){$("emps").innerHTML="";addEmpRow();$("fComments").value="";$("fDate").value=today();showErr("fErr","")}
+$("reqForm").addEventListener("submit",async ev=>{ev.preventDefault();showErr("fErr","");const bad=m=>showErr("fErr",m);
+  const p={otDate:$("fDate").value,section:$("fSection").value,approver:$("fApprover").value,comments:$("fComments").value.trim(),employees:readEmps()};
+  if(!p.otDate)return bad("Pick the date of OT.");if(!p.approver)return bad("Pick the approver.");
+  const seen=new Set();
+  for(const [k,e] of p.employees.entries()){if(!e.empId)return bad(e.typed?`Employee ${k+1}: “${e.typed}” isn’t in the list. Tap a name from the suggestions.`:`Employee ${k+1}: choose a name.`);if(seen.has(e.empId))return bad(`${e.name} is listed twice.`);seen.add(e.empId);
+    if(!(e.est>0&&e.est<=16))return bad(`${e.name}: hours must be 0.5 to 16.`);if(!e.reason)return bad(`${e.name}: choose a reason.`)}
+  if(S.cfg.staffPinRequired&&!pin())return bad("Enter the supervisor PIN.");
+  $("fSubmit").disabled=true;$("fSubmit").textContent="Sending…";
+  try{await call("submitRequest",p,pin());store.set("ot.apr",p.approver);if($("fPin").value)store.set("ot.pin",$("fPin").value);
+    toast(`Sent to ${p.approver}: ${p.section}, ${fmtD(p.otDate)}`);resetForm()}
+  catch(e){bad(e.message||"Couldn’t send. Check your connection and try again.")}
+  finally{$("fSubmit").disabled=false;$("fSubmit").textContent="Send for approval"}});
+
+/* ---------- data ---------- */
+let loading=false;
+async function load(){if(loading)return;loading=true;
+  try{S.reqs=await call("getRequests",addDays(today(),-62),addDays(today(),31));renderAll()}
+  catch(e){toast("Couldn’t load requests: "+e.message)}finally{loading=false}}
+
+/* ---------- cards ---------- */
+function empTable(r,editable){const t=totals(r);const showAct=editable||t.hasAct;
+  return `<div class="tw"><table><thead><tr><th>Emp No</th><th>Name</th><th>Reason</th><th class="n">Est.</th>${showAct?`<th class="n">Actual</th><th class="n">Delta</th>`:""}</tr></thead><tbody>${
+  r.employees.map((e,i)=>{const dl=e.actual!=null?num(e.actual)-num(e.est):null;
+   return `<tr><td class="n" style="text-align:left">${esc(e.empId)}</td><td>${esc(e.name)}</td><td>${esc(e.reason)}</td><td class="n">${fmtH(e.est)}</td>${showAct?`<td class="n">${editable?`<input class="act" type="number" inputmode="decimal" min="0" max="24" step="0.5" id="a-${r.id}-${i}" value="${e.actual??""}" aria-label="Actual hours">`:fmtH(e.actual)}</td><td class="n ${dl>0?"pos":dl<0?"neg":""}">${dl==null?"–":sg(dl)}</td>`:""}</tr>`}).join("")
+  }</tbody><tfoot><tr><td colspan="3">Total</td><td class="n">${fmtH(t.est)}</td>${showAct?`<td class="n">${t.hasAct?fmtH(t.act):"–"}</td><td class="n">${t.hasAct?sg(t.act-t.est):"–"}</td>`:""}</tr></tfoot></table></div>`}
+function card(r,ctx){const st=r.status||"pending";const t=totals(r);
+  const editable=ctx==="log"&&st==="approved"&&r.otDate<=today();
+  let foot="";
+  if(ctx==="queue")foot=`<div class="card-f"><input id="rm-${r.id}" placeholder="Remark (optional)"><button class="btn ok" data-act="approved" data-id="${r.id}">Approve</button><button class="btn bad" data-act="rejected" data-id="${r.id}">Reject</button></div>`;
+  else{const b=[];if(editable)b.push(`<button class="btn" data-act="saveact" data-id="${r.id}">Save actual hours</button>`);
+    if(S.me&&st!=="pending")b.push(`<button class="btn link" data-act="pending" data-id="${r.id}">Move back to pending</button>`);
+    if(st==="pending")b.push(`<button class="btn link" data-act="withdraw" data-id="${r.id}">Withdraw</button>`);
+    if(b.length)foot=`<div class="card-f"><span class="spacer"></span>${b.join("")}</div>`}
+  const decided=st==="pending"?`<span class="meta">Sent ${esc(r.submittedAt)} · waiting for ${esc(r.approver)}</span>`:`<span class="meta"><b>${st==="approved"?"Approved":"Rejected"} by ${esc(r.decidedBy)}</b> · ${esc(r.decidedAt)}${r.decidedBy!==r.approver?` (sent to ${esc(r.approver)})`:""}</span>`;
+  return `<article class="card ${st}"><div class="card-h"><span class="sec">${esc(r.section)}</span><span class="meta">${fmtD(r.otDate)}</span>${ctx==="queue"&&r.approver===S.me?`<span class="mine">For you</span>`:ctx==="queue"?`<span class="meta">For ${esc(r.approver)}</span>`:""}<span class="spacer"></span><span class="meta">${r.employees.length} emp · ${fmtH(t.est)} hrs</span><span class="pill ${st}">${st}</span></div>
+  <div class="card-b">${empTable(r,editable)}${r.comments?`<div class="note"><b>Comments</b>${esc(r.comments)}</div>`:""}${r.remark?`<div class="note"><b>Approver remark</b>${esc(r.remark)}</div>`:""}${decided}</div>${foot}</article>`}
+
+/* ---------- actions ---------- */
+document.addEventListener("click",async ev=>{const b=ev.target.closest("[data-act]");if(!b)return;const id=b.dataset.id,act=b.dataset.act;
+  if(act==="withdraw"&&b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent="Tap again to withdraw";return}
+  b.disabled=true;
+  try{
+    if(act==="approved"||act==="rejected"||act==="pending"){const rm=$("rm-"+id);await call("decide",S.tok,[id],act,rm?rm.value.trim():"");toast(act==="pending"?"Moved back to pending":act==="approved"?"Approved":"Rejected")}
+    else if(act==="withdraw"){await call("withdraw",id,pin(),S.tok);toast("Request withdrawn")}
+    else if(act==="saveact"){const r=S.reqs.find(x=>x.id===id);const a=r.employees.map((e,i)=>{const v=$(`a-${id}-${i}`).value;return v===""?null:num(v)});await call("saveActuals",id,a,pin(),S.tok);toast("Actual hours saved")}
+    await load();
+  }catch(e){authFail(e);b.disabled=false}});
+const pending=()=>S.reqs.filter(r=>r.status==="pending").sort((a,b)=>(b.approver===S.me)-(a.approver===S.me)||a.otDate.localeCompare(b.otDate)||a.section.localeCompare(b.section));
+$("approveAll").onclick=async()=>{const b=$("approveAll");const p=pending().filter(r=>r.approver===S.me);
+  if(b.dataset.confirm!=="1"){b.dataset.confirm="1";b.textContent=`Confirm: approve ${p.length}`;return}
+  b.dataset.confirm="";b.disabled=true;
+  try{await call("decide",S.tok,p.map(r=>r.id),"approved","");toast(`Approved ${p.length} requests`);await load()}catch(e){authFail(e)}
+  b.disabled=false};
+$("refresh1").onclick=load;
+
+/* ---------- renderers ---------- */
+function grouped(list,ctx){let html="",last="";for(const r of list){if(r.otDate!==last){html+=`<div class="day-h">${fmtD(r.otDate)}${r.otDate===today()?" · Today":""}</div>`;last=r.otDate}html+=card(r,ctx)}return html}
+function renderQueueTab(){const inn=!!S.me;$("loginForm").hidden=inn;$("queueWrap").hidden=!inn;if(!inn)$("pwForm").hidden=true;renderQueue()}
+function renderQueue(){const p=pending();const mine=p.filter(r=>r.approver===S.me);
+  $("qcount").textContent=S.me?mine.length:p.length;$("qcount").hidden=!(S.me?mine.length:p.length);
+  if(!S.me)return;
+  $("qSub").textContent=p.length?`${mine.length} for you · ${p.length-mine.length} for others · ${fmtH(mine.reduce((a,r)=>a+totals(r).est,0))} hrs requested from you`:"Nothing waiting.";
+  const ab=$("approveAll");ab.hidden=mine.length<2;if(ab.dataset.confirm!=="1")ab.textContent=`Approve all mine (${mine.length})`;
+  const keep=[...document.querySelectorAll("#queue input")].map(i=>[i.id,i.value]);
+  let html="";
+  if(!p.length)html=`<div class="empty"><strong>No pending requests</strong>New overtime requests from all sections appear here.</div>`;
+  else{if(mine.length)html+=grouped(mine,"queue");else html+=`<div class="empty"><strong>Nothing waiting for you</strong>Requests sent to the other approver are below.</div>`;
+    const others=p.filter(r=>r.approver!==S.me);if(others.length)html+=`<h2 style="margin-top:8px">Sent to other approver</h2>`+grouped(others,"queue")}
+  $("queue").innerHTML=html;keep.forEach(([id,v])=>{const el=$(id);if(el)el.value=v})}
+function renderLog(){const f=$("lFrom").value,t=$("lTo").value,sec=$("lSection").value,stF=$("lStatus").value;
+  const rows=S.reqs.filter(r=>(!f||r.otDate>=f)&&(!t||r.otDate<=t)&&(!sec||r.section===sec)&&(!stF||r.status===stF)).sort((a,b)=>b.otDate.localeCompare(a.otDate)||a.section.localeCompare(b.section));
+  $("log").innerHTML=rows.length?grouped(rows,"log"):`<div class="empty"><strong>No requests in this range</strong>Requests from the last two months show here. Older months are in Reports.</div>`}
+function renderAll(){renderQueue();if(S.tab==="log")renderLog()}
+["lFrom","lTo","lSection","lStatus"].forEach(id=>$(id).addEventListener("change",renderLog));
+
+/* ---------- reports ---------- */
+function setMode(m){S.report.mode=m;$("mDaily").setAttribute("aria-pressed",m==="daily");$("mMonthly").setAttribute("aria-pressed",m==="monthly");$("rDay").hidden=m!=="daily";$("rMonth").hidden=m!=="monthly";loadReport()}
+$("mDaily").onclick=()=>setMode("daily");$("mMonthly").onclick=()=>setMode("monthly");
+["rDay","rMonth","rSection"].forEach(id=>$(id).addEventListener("change",loadReport));
+function range(){if(S.report.mode==="daily"){const d=$("rDay").value||today();return[d,d]}const m=$("rMonth").value||today().slice(0,7);const[y,mo]=m.split("-").map(Number);return[`${m}-01`,`${m}-${pad(new Date(y,mo,0).getDate())}`]}
+const label=()=>{const[from]=range();return S.report.mode==="daily"?fmtD(from):new Date(from+"T00:00:00").toLocaleString("en-GB",{month:"long",year:"numeric"})};
+async function loadReport(){$("exportOut").hidden=true;const[from,to]=range();$("report").innerHTML=`<div class="loading">Loading ${esc(label())}…</div>`;
+  try{const all=await call("getRequests",from,to);buildReport(all.filter(r=>r.otDate>=from&&r.otDate<=to),from,to)}
+  catch(e){$("report").innerHTML=`<div class="empty">Couldn’t load this period. ${esc(e.message)}</div>`}}
+function buildReport(reqs,from,to){const sec=$("rSection").value;reqs=reqs.filter(r=>!sec||r.section===sec);
+  const lines=[];reqs.forEach(r=>r.employees.forEach(e=>lines.push({date:r.otDate,section:r.section,empId:e.empId,name:e.name,reason:e.reason,est:num(e.est),actual:e.actual,delta:e.actual!=null?num(e.actual)-num(e.est):null,status:r.status,approver:r.approver,decidedBy:r.decidedBy,comments:r.comments,remark:r.remark})));
+  lines.sort((a,b)=>a.date.localeCompare(b.date)||a.section.localeCompare(b.section));
+  const cnt=s=>reqs.filter(r=>r.status===s).length;const appr=lines.filter(l=>l.status==="approved");const withAct=appr.filter(l=>l.actual!=null);
+  const planned=appr.reduce((a,l)=>a+l.est,0),actual=withAct.reduce((a,l)=>a+l.actual,0),delta=withAct.reduce((a,l)=>a+l.delta,0);
+  const group=keyFn=>{const m=new Map();lines.forEach(l=>{const k=keyFn(l)||"–";const g=m.get(k)||{k,emp:0,est:0,act:0,dl:0,noAct:0,rej:0,pend:0};
+    if(l.status==="approved"){g.emp++;g.est+=l.est;if(l.actual!=null){g.act+=l.actual;g.dl+=l.delta}else g.noAct++}else if(l.status==="rejected")g.rej+=l.est;else g.pend+=l.est;m.set(k,g)});return[...m.values()]};
+  const order=(arr,ref)=>arr.sort((a,b)=>ref.indexOf(a.k)-ref.indexOf(b.k));
+  const dcls=v=>v>0?"pos":v<0?"neg":"";
+  if(!lines.length){$("report").innerHTML=`<div class="empty"><strong>No overtime recorded for ${esc(label())}${sec?" · "+esc(sec):""}</strong>Pick another ${S.report.mode==="daily"?"date":"month"} or section.</div>`;return}
+  const gt=(rows,title,col)=>`<div class="panel"><h2>${title}</h2><div class="tw"><table><thead><tr><th>${col}</th><th class="n">Emp</th><th class="n">Approved</th><th class="n">Actual</th><th class="n">Delta</th><th class="n">Rejected</th><th class="n">Pending</th></tr></thead><tbody>${rows.map(g=>`<tr><td>${esc(g.k)}</td><td class="n">${g.emp}</td><td class="n">${fmtH(g.est)}</td><td class="n">${fmtH(g.act)}${g.noAct?` <span class="meta">(${g.noAct} open)</span>`:""}</td><td class="n ${dcls(g.dl)}">${sg(g.dl)}</td><td class="n">${fmtH(g.rej)}</td><td class="n">${fmtH(g.pend)}</td></tr>`).join("")}</tbody></table></div></div>`;
+  $("report").innerHTML=`<div><h2>${esc(label())}${sec?" · "+esc(sec):""}</h2><p class="sub">${fmtD(from)}${from!==to?" – "+fmtD(to):""} · Hours · Delta = actual − approved, where actual is entered</p></div>
+  <div class="tiles">
+   <div class="tile"><div class="k">Requests</div><div class="v">${reqs.length}</div><div class="s">${cnt("approved")} approved · ${cnt("rejected")} rejected · ${cnt("pending")} pending</div></div>
+   <div class="tile"><div class="k">Approved OT</div><div class="v">${fmtH(planned)}</div><div class="s">hrs · ${appr.length} employee entries</div></div>
+   <div class="tile"><div class="k">Actual OT</div><div class="v">${fmtH(actual)}</div><div class="s">hrs · ${withAct.length} of ${appr.length} entered</div></div>
+   <div class="tile"><div class="k">Delta</div><div class="v ${dcls(delta)}">${sg(delta)}</div><div class="s">Target 0</div></div>
+  </div>
+  <div class="two">${gt(order(group(l=>l.section),S.cfg.sections),"By section","Section")}${gt(order(group(l=>l.reason),S.cfg.reasons),"By reason","Reason")}${gt(group(l=>l.status==="pending"?"":l.decidedBy).filter(g=>g.k!=="–"),"By approver","Decided by")}</div>
+  <div class="panel"><h2>Detail</h2><div class="tw"><table><thead><tr><th>Date</th><th>Section</th><th>Emp No</th><th>Name</th><th>Reason</th><th class="n">Est.</th><th class="n">Actual</th><th class="n">Delta</th><th>Status</th><th>Approved / rejected by</th><th>Comments</th></tr></thead><tbody>${lines.map(l=>`<tr><td style="white-space:nowrap">${fmtD(l.date)}</td><td>${esc(l.section)}</td><td>${esc(l.empId)}</td><td>${esc(l.name)}</td><td>${esc(l.reason)}</td><td class="n">${fmtH(l.est)}</td><td class="n">${fmtH(l.actual)}</td><td class="n ${dcls(l.delta)}">${l.delta==null?"–":sg(l.delta)}</td><td><span class="pill ${l.status}">${l.status}</span></td><td>${esc(l.status==="pending"?"Sent to "+l.approver:l.decidedBy)}</td><td style="min-width:180px">${esc([l.comments,l.remark&&("Approver: "+l.remark)].filter(Boolean).join(" · "))}</td></tr>`).join("")}</tbody></table></div></div>`}
+$("dlXlsx").onclick=async()=>{const out=$("exportOut");
+  if(!S.me){out.innerHTML=`<span class="err">Export is for approvers. Log in from the Approvals tab.</span>`;out.hidden=false;return}
+  const[from,to]=range();const b=$("dlXlsx");b.disabled=true;b.textContent="Preparing…";
+  try{const r=await call("exportReport",S.tok,from,to,$("rSection").value,label());
+    out.innerHTML=`<a class="btn ok" href="${esc(r.xlsxUrl)}" target="_blank" rel="noopener">Download .xlsx</a><a class="btn" href="${esc(r.sheetUrl)}" target="_blank" rel="noopener">Open in Google Sheets</a>`;out.hidden=false}
+  catch(e){authFail(e)}
+  b.disabled=false;b.textContent="Export to Excel"};
+
+/* ---------- boot ---------- */
+window.addEventListener("DOMContentLoaded",async()=>{
+  try{S.cfg=await call("getConfig")}catch(e){toast("Couldn’t load settings: "+e.message)}
+  if(!S.cfg.employees||!S.cfg.employees.length)S.cfg.employees=BUILTIN_EMPLOYEES;
+  S.emp=new Map(S.cfg.employees.map(e=>[e[0],e]));
+  fillSelect($("fSection"),S.cfg.sections);fillSelect($("fApprover"),S.cfg.approvers);fillSelect($("aName"),S.cfg.approvers);
+  fillSelect($("lSection"),S.cfg.sections,"All sections");fillSelect($("rSection"),S.cfg.sections,"All sections");
+  $("pinWrap").hidden=!S.cfg.staffPinRequired;$("fPin").value=store.get("ot.pin")||"";
+  const sec=store.get("ot.section");if(sec&&S.cfg.sections.includes(sec))$("fSection").value=sec;
+  const apr=store.get("ot.apr");if(apr&&S.cfg.approvers.includes(apr))$("fApprover").value=apr;
+  const me=store.get("ot.approver");if(me&&S.cfg.approvers.includes(me))$("aName").value=me;
+  $("lFrom").value=addDays(today(),-14);$("lTo").value=addDays(today(),7);
+  $("rDay").value=today();$("rMonth").value=today().slice(0,7);
+  resetForm();
+  const tok=store.get("ot.tok");let name=null;if(tok){try{name=await call("whoAmI",tok)}catch(e){}}
+  setAuth(name?tok:null,name);
+  call("approverStatus").then(s=>S.pwStatus=s).catch(()=>{});
+  const t=store.get("ot.tab");setTab(["new","queue","log","report"].includes(t)?t:(name?"queue":"new"));
+  if(S.tab==="new")load();
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&(S.tab==="queue"||S.tab==="log"))load()});
+  setInterval(()=>{if(!document.hidden&&S.tab==="queue"&&S.me)load()},60000);
+});
+
+/* ---------- built-in employee list (fallback if the sheet sends none; also used in preview) ---------- */
+const BUILTIN_EMPLOYEES=[["20008499","Farhat Afzal","Art"],["20009555","Hassan Bin Zahid","Art"],["20008952","Maham","Art"],["20008376","Mekaiel Akhtar","Art"],["20007755","Muhammad Adeel","Art"],["20008803","Muhammad Hassan Zahid","Art"],["20009419","Muhammad Rehman Irshad","Art"],["20007715","Muhammad Salman Khalid","Art"],["20008959","Muhammad Waqar Khan","Art"],["20008823","Namra Qayyum","Art"],["20005646","Sabika Shiekh","Art"],["20008886","Sayyed Qasim Hussain","Art"],["20007855","Syed Ali Abbas","Art"],["20008210","Syed Danish Zakir","Art"],["20003948","Usman Ali","Art"],["20008678","Zain Hamza","Art"],["20006140","Adnan Yasin","Engineering"],["20009407","Ahsan Ali","Engineering"],["20009687","Ahsan Rehman","Engineering"],["20007568","Akhlaq Ahmad","Engineering"],["993428","Amir Khalid","Engineering"],["20004056","Amir Shehzad","Engineering"],["20004147","Asghar Ali","Engineering"],["20004674","Danial Rafique","Engineering"],["20009634","Farman Ali","Engineering"],["20009124","Ghulam Mustafa","Engineering"],["20006240","Hafiz Ghulam Murtaza","Engineering"],["20004838","Ikram Muhammad","Engineering"],["20008431","Khuram Muneer","Engineering"],["993281","MUHAMMAD AWAIS","Engineering"],["993025","Mirza Mohsin Baig","Engineering"],["20004972","Muhammad Aamir Riaz","Engineering"],["20007108","Muhammad Amjad","Engineering"],["20002550","Muhammad Asghar Shah","Engineering"],["20008035","Muhammad Asif","Engineering"],["20007990","Muhammad Asif Raza","Engineering"],["20006225","Muhammad Fayyaz","Engineering"],["20009744","Muhammad Ramzan","Engineering"],["20003536","Muhammad Raza","Engineering"],["20006942","Muhammad Riaz","Engineering"],["20006555","Muhammad Sajjad","Engineering"],["20002549","Muhammad Salaih","Engineering"],["992292","Muhammad Saleem","Engineering"],["20006228","Muhammad Shahzad Bhatti","Engineering"],["20008429","Muhammad Shoaib","Engineering"],["20002232","Muhammad Umair Ul Atiq","Engineering"],["20006241","Muhammad Wasim","Engineering"],["20007235","Muhammad Yousaf","Engineering"],["20004984","Muhammad Zain Ul Ab Din","Engineering"],["20008207","Muhammad Zohaib Khan","Engineering"],["20006453","Mukhtar Iqbal","Engineering"],["20000720","Nisar Ahmad","Engineering"],["20009743","Rao Anees Ur Rehman","Engineering"],["20002132","Shahbaz Yousaf","Engineering"],["20000515","Shahzad Saleem","Engineering"],["20007579","Shoaib Idrees","Engineering"],["20005077","Syed Ghazanfar Abbas Zaidi","Engineering"],["20007395","Wajid Ali","Engineering"],["993751","Waseem Hussain","Engineering"],["20004182","Yasir Amin","Engineering"],["20002128","Yousaf Barkat Bhatti","Engineering"],["20007434","Zahid Hussain","Engineering"],["991663","Aamir Shahzad","Extrusion"],["993778","Abu Baker Latif","Extrusion"],["20008327","Ahmad Rehman","Extrusion"],["20008038","Asif Raza","Extrusion"],["993780","Hamid Ali Bajwa","Extrusion"],["20002203","Khuram Shahzad","Extrusion"],["20002262","Liaqat Ali","Extrusion"],["992748","M Adnan","Extrusion"],["20002216","Malik Adil Hussain","Extrusion"],["992538","Mr. Usama Khan Sherwani","Extrusion"],["20008033","Muhammad Amin","Extrusion"],["20009709","Muhammad Arshed Kashif","Extrusion"],["20009581","Muhammad Bilal","Extrusion"],["20004677","Muhammad Parvez","Extrusion"],["991679","Muhammad Saqib Bhutta","Extrusion"],["990428","Muhammad Umair","Extrusion"],["20003470","Muhammad Zaheer Ahmad","Extrusion"],["20009814","Musharaf ali","Extrusion"],["20004046","Qaiser Iqbal","Extrusion"],["20003104","Qamar Subhani","Extrusion"],["20006226","Rashid Ali","Extrusion"],["20004487","Rizwan Yousaf","Extrusion"],["20009719","Saif Ullah","Extrusion"],["20008603","Shafqat Lateef","Extrusion"],["991330","Shahbaz Haider","Extrusion"],["20008325","Shahbaz Maqsood","Extrusion"],["20004336","Shahid Javed Iqbal","Extrusion"],["992544","abdul Mannan","Extrusion"],["990382","Abdul Majeed","Finishing"],["20002222","Abdul Qayyum","Finishing"],["20009732","Abdul Rauf","Finishing"],["992596","Abdul Rehman","Finishing"],["20003468","Abid Gulzar","Finishing"],["990394","Akbar Khan","Finishing"],["20000869","Ali Muhammad","Finishing"],["992746","Ali Sabir","Finishing"],["992526","Ameer Hamza","Finishing"],["20004855","Amir Hussain Shaheen","Finishing"],["20003047","Amjad Mahmood","Finishing"],["20003067","Asghar Ali","Finishing"],["992708","Asif Nawaz","Finishing"],["20003927","Asif Ramzan","Finishing"],["20003727","Aurang Zeb","Finishing"],["990446","Awais Ali","Finishing"],["992703","Azmat ali","Finishing"],["20002229","Babar Shahzad","Finishing"],["992767","Ch Irfan Najam","Finishing"],["992830","Farhan Rasool","Finishing"],["990404","Farhan khan","Finishing"],["20009489","Faryad Ali","Finishing"],["992482","Fiaz ahmad","Finishing"],["20004830","Ghulam Abbas","Finishing"],["991705","Hafiz Muhammad Naeem","Finishing"],["993026","Haris Junaid","Finishing"],["992756","Haseeb Shabaz","Finishing"],["992376","Hassan Mahboob","Finishing"],["993804","Husnain Ali","Finishing"],["20002151","Ijaz Ahmad","Finishing"],["20009123","Imran Hussain","Finishing"],["990378","Imran Hussain","Finishing"],["20002205","Imran Khan","Finishing"],["990422","Imtiaz Ali","Finishing"],["990409","Ishfaq hussain","Finishing"],["990374","Kaleem ullah","Finishing"],["20002129","Lall Din","Finishing"],["992994","M Faizan cheema","Finishing"],["990690","M Husnain","Finishing"],["990405","M Khalid Hussain","Finishing"],["990395","Majid khan","Finishing"],["20002148","Maqbool Hussain","Finishing"],["990352","Mazhar Hussain","Finishing"],["990397","Mohammad Mujahid","Finishing"],["20001589","Mohammad Saleem","Finishing"],["992734","Mubashar Ali","Finishing"],["990357","Mudassar Hussain Shah","Finishing"],["993082","Muhammad Adnan","Finishing"],["990346","Muhammad Afzal","Finishing"],["20003478","Muhammad Akram","Finishing"],["20002233","Muhammad Ali","Finishing"],["20002246","Muhammad Amin","Finishing"],["20009727","Muhammad Amin","Finishing"],["20003473","Muhammad Ashfaq","Finishing"],["990449","Muhammad Awais","Finishing"],["990328","Muhammad Azam","Finishing"],["990433","Muhammad Azeem","Finishing"],["990419","Muhammad Bilal","Finishing"],["992071","Muhammad Bilal","Finishing"],["20004847","Muhammad Ejaz","Finishing"],["990390","Muhammad Imran sleeve","Finishing"],["20002159","Muhammad Latif","Finishing"],["20002201","Muhammad Nadeem","Finishing"],["20002141","Muhammad Raza","Finishing"],["20005539","Muhammad Saeed","Finishing"],["990345","Muhammad Saeed","Finishing"],["20000508","Muhammad Shahbaz","Finishing"],["20004831","Muhammad Shazad","Finishing"],["20002236","Muhammad Suleman","Finishing"],["20006929","Muhammad Usama","Finishing"],["991743","Muhammad Yameen","Finishing"],["20002140","Muhammad Yar","Finishing"],["990350","Muhammad Yousaf","Finishing"],["20002238","Muhammad Yousaf Salik","Finishing"],["992476","Muhammad Zaid","Finishing"],["991674","Muhammad farooq","Finishing"],["990333","Muqaddas Hussain","Finishing"],["992250","Murad ali","Finishing"],["993013","Muzammil Rizwan","Finishing"],["990308","Nazeer Ahmad","Finishing"],["20003472","Nazir Ahmad","Finishing"],["20003548","Nisar Ahmad","Finishing"],["20002127","Pervaiz Veroo","Finishing"],["992718","Qaseem Aslam","Finishing"],["20002259","Ramzan Anwar","Finishing"],["990371","Ramzan Rafique","Finishing"],["990376","Rizwan ali","Finishing"],["20004678","Sajid Ghafoor","Finishing"],["990343","Shahid Ali Shah","Finishing"],["990360","Shahwaiz Ali","Finishing"],["20002147","Sharafat Ali","Finishing"],["20004713","Shehzad Ali","Finishing"],["992709","Sohail Ahmed","Finishing"],["991671","Syed Mubashir usman","Finishing"],["20003479","Tariq Ali","Finishing"],["990355","Tariq Idrees","Finishing"],["991260","Tariq Muneer","Finishing"],["992619","Wajid Hussain","Finishing"],["20003068","Wajid Sadiq Masih","Finishing"],["993301","Wajid Saleem","Finishing"],["20002152","Yasir Naeem Ashraf","Finishing"],["990356","Zafar Iqbal","Finishing"],["990353","Zaheer ud Din Babar","Finishing"],["20009087","Zahid Ali Shouqat","Finishing"],["20003152","Abdul Hameed","Flexo"],["990473","Aqib","Flexo"],["993378","Faisal Ali","Flexo"],["993014","Hafiz Muhammad Zahid","Flexo"],["993005","Kashif Ali","Flexo"],["990344","M Yaseen","Flexo"],["992626","M Zeeshan","Flexo"],["20003069","Muhammad Ashfaq","Flexo"],["20003544","Muhammad Awais Amjid","Flexo"],["20003038","Muhammad Ayub","Flexo"],["20009620","Muhammad Danish","Flexo"],["20009122","Muhammad Dawood","Flexo"],["20003538","Muhammad Fayyaz Khan","Flexo"],["20002144","Muhammad Ilyas","Flexo"],["20003902","Muhammad Mudassar Nazar","Flexo"],["993318","Muhammad Zubair","Flexo"],["20009557","Nasir Sohail","Flexo"],["990475","Qaisar Raza","Flexo"],["20009695","Qasim Khan","Flexo"],["993223","Rana Ahsan Ahmed","Flexo"],["20004858","Rasheed Alam","Flexo"],["20004714","Sajid Iqbal","Flexo"],["20008137","Shakir Saleem Mughal","Flexo"],["20008142","Shamsher Khan","Flexo"],["20009559","Sharafat Amanat","Flexo"],["992424","Tahir Mehmood","Flexo"],["20004471","Tauqeer Ahmad","Flexo"],["20008138","Tayyab Hassan","Flexo"],["20004538","Uzman Ashraf","Flexo"],["20004925","Akbar Ali","Lamination"],["991943","Ali Raza","Lamination"],["20006530","Amir Rasheed","Lamination"],["992742","Fiyyaz Ahmed","Lamination"],["20003155","Gulzar Hussain","Lamination"],["20009156","Hafiz Abdul Waheed","Lamination"],["992131","Hafiz M Farqan","Lamination"],["20004521","Imran Shoukat","Lamination"],["20009721","Kamran Rafaqat","Lamination"],["993387","M Imtiaz","Lamination"],["992831","M Jahangir","Lamination"],["992727","Mazhar Saeed","Lamination"],["20003150","Mehboob Alam","Lamination"],["20002231","Mubashar Hussain Arshad","Lamination"],["20009718","Muhammad Ahmad","Lamination"],["20002196","Muhammad Amjid Khan","Lamination"],["20000530","Muhammad Arshad","Lamination"],["20006165","Muhammad Awais Ahmad","Lamination"],["20008014","Muhammad Awais Mushtaq","Lamination"],["20008506","Muhammad Azhar","Lamination"],["20002221","Muhammad Hassan","Lamination"],["20002244","Muhammad Ilyas","Lamination"],["20000552","Muhammad Ilyas","Lamination"],["20004275","Muhammad Irfan","Lamination"],["20004273","Muhammad Khurram Siddique","Lamination"],["20004044","Muhammad Rizwan","Lamination"],["20002251","Muhammad Shahid Khan","Lamination"],["20008016","Muhammad Umer","Lamination"],["20009611","Muhammad Yasir","Lamination"],["993304","Naeem Iqbal","Lamination"],["20009639","Omer","Lamination"],["20003831","Sajed Mahmood","Lamination"],["20008015","Sajjad Ahmad","Lamination"],["20008012","Sakhawat Mustafa","Lamination"],["20009637","Saqib Rafique","Lamination"],["993779","Shahid Ashraf","Lamination"],["20003546","Shahzad Hassan","Lamination"],["20008013","Shahzad Hussain","Lamination"],["20004281","Syed Irfan Abbas Kazmi","Lamination"],["20006220","Syed Kashif Hussain","Lamination"],["992980","Syed Qasim Ali","Lamination"],["992567","Syed Sheraz Haider","Lamination"],["993777","Syed mohsin raza","Lamination"],["991728","Waqar Mushtaq","Lamination"],["992580","Waseem akthar","Lamination"],["20002213","Zahid Abbas","Lamination"],["20009576","Zahid Ali","Lamination"],["20006458","Zahid Sattar","Lamination"],["990400","Zaki Shah","Lamination"],["20007584","Abbas Ali","Management"],["20009758","Abdur Rehman Sheikh","Management"],["20000727","Abid Hussain","Management"],["20009825","Aeman Ashraf","Management"],["20008842","Afshal Amir","Management"],["20008284","Ahmad Fazal","Management"],["20009465","Ali Adil Sheikh","Management"],["20009716","Ali Tahir","Management"],["20009625","Amir","Management"],["20008254","Ammar Farooq","Management"],["20009766","Aqdas Ali","Management"],["20000503","Athar Riaz","Management"],["20003572","Atif Ali","Management"],["20009761","Eisha Raza","Management"],["20008166","Ghulam Mustafa","Management"],["20009762","Gulnoor Sohail","Management"],["20009371","Hafiz Muhammad Usman Ahmad","Management"],["20009845","Hafiz Muhammad Yousaf Akram","Management"],["20007207","IMRAN AZIZ SALARIA","Management"],["20007738","Iftikhar Alam Shah","Management"],["20008861","Imran Imtiaz","Management"],["20005024","Johnson Yaqoob","Management"],["20006709","Kashif Shahzad","Management"],["20000523","Khalid Bashir","Management"],["20009608","Khawaja Bilal Ahmed Wyne","Management"],["20008988","Khuldoon Ali Raza","Management"],["20000527","M Saeed","Management"],["20008178","Malik Daniyal Jan","Management"],["20007870","Mamoona Syed","Management"],["20008543","Mansoor Ahmed Mirza","Management"],["20000690","Maqsood Ahmed","Management"],["20009763","Minhal","Management"],["20007792","Mohsin Rafiq","Management"],["20008613","Mubarak Ali Khan","Management"],["20001153","Muhammad Abid","Management"],["20009613","Muhammad Anas Bin Azam","Management"],["20008944","Muhammad Hamza Zaib","Management"],["20009834","Muhammad Ibrahim","Management"],["20009824","Muhammad Jahanzaib Hassan Shah","Management"],["20008230","Muhammad Mohsin Ali Akhtar","Management"],["20009626","Muhammad Osama","Management"],["20009617","Muhammad Saad Bin Ayub","Management"],["20009533","Muhammad Shoaib Khan","Management"],["20003734","Muhammad Tanveer","Management"],["20009414","Muhammad Umair","Management"],["20009339","Muhammad Umair Shafique","Management"],["20007053","Muhammad Umer Farooq","Management"],["20008280","Muhammad Usama Saeed","Management"],["20009600","Muhammad Usman","Management"],["20009753","Murad Ali","Management"],["20009729","Naveed Bhatti","Management"],["20008542","Nazish Siddiqui","Management"],["20007790","Rafaqat Ali","Management"],["20008630","Saba Naz","Management"],["20009833","Samiya Gohar","Management"],["20009523","Shahid Saeed","Management"],["20008691","Shahmeer Aslam","Management"],["20008715","Shehroz Khalid","Management"],["20009668","Sheza Shamim","Management"],["20009305","Syed Hussnain Zaidi","Management"],["20002281","Syed Kaleem Haider Kazmi","Management"],["20004864","Syeda Zehra Qaiser","Management"],["20005628","Tanvir Ahmad Awan","Management"],["20009701","Umar Shouk Butt","Management"],["20008845","Umer Javed","Management"],["20009772","Usama Majeed","Management"],["20008821","Uzair Asad","Management"],["20009751","Warda","Management"],["20009720","Zeeshan Ali","Management"],["20009532","Zoya Ahmed","Management"],["20002206","Arshad Ali","Office Clerk"],["993204","Khalid Hussian","Office Clerk"],["993557","Meer Wali Khan","Planning"],["20008615","Sabahat Raza Khan","Planning"],["20006434","Abdul Rauf","Quality assurance"],["20004288","Ahmad Khan","Quality assurance"],["20002537","Amjad Ali","Quality assurance"],["20003675","Ghaznfar Ali","Quality assurance"],["20006754","Kashif Shahzad","Quality assurance"],["993239","Khizar Ali","Quality assurance"],["20000526","M Jamil Anjum","Quality assurance"],["20000666","M Munir","Quality assurance"],["20003108","M Murtaza","Quality assurance"],["20004959","M Usman Baig","Quality assurance"],["20006394","Muhammad Imran Haider","Quality assurance"],["20007337","Rana Usman Asgher","Quality assurance"],["20000445","Shoaib Ismail","Quality assurance"],["20009684","Laila Fatima","R&D"],["20000671","Mohammad Saleem","R&D"],["20009619","Muhammad Ramzan","R&D"],["20006962","Muhammad Sajid Dilshad","R&D"],["20006963","Shahid Mehmood Mufti","R&D"],["990472","Abbas","Reproduction"],["991919","Abdul Qadeer","Reproduction"],["20007386","Abdul Qadir","Reproduction"],["20003867","Adnan Alam","Reproduction"],["20000625","Agha Kashif Ali","Reproduction"],["20004053","Ahsan Imtiaz","Reproduction"],["20002417","Akbar Ali","Reproduction"],["990815","Allah Wasaya","Reproduction"],["20007351","Amir Younis","Reproduction"],["20002143","Arshad Mahmood","Reproduction"],["20008642","Ayub Shah","Reproduction"],["992867","BAGH ALI","Reproduction"],["20007078","Faisal","Reproduction"],["20008282","Farhan kazmi","Reproduction"],["20007881","HUMAYUN REHMAN","Reproduction"],["20009738","Hafiz Muhammad Ismail","Reproduction"],["993123","Hassan jahnzaib","Reproduction"],["20007882","IJAZ AHMAD","Reproduction"],["20000635","Ijaz Ahmad","Reproduction"],["992099","Irshad Hussain","Reproduction"],["993120","Kabeer Khan","Reproduction"],["20003036","Kamran","Reproduction"],["20004026","Khalil Ahmad","Reproduction"],["990474","M Shahbaz","Reproduction"],["20001693","M. Riaz","Reproduction"],["20007410","M.Shahid","Reproduction"],["20004244","Mohsan ABID","Reproduction"],["990299","Mr Sana ul Haq","Reproduction"],["20002237","Mr.Asghar Ali","Reproduction"],["20003521","Mr.Muhammad Irfan","Reproduction"],["20003434","Mr.Muhammad Ramzan","Reproduction"],["20004114","Mr.Mushtaq Ahmad","Reproduction"],["20002000","Mr.Raza-e-Mustafa","Reproduction"],["20003869","Muazzam Khan","Reproduction"],["33301-09125909","Mubashir Ali","Reproduction"],["20009560","Muhammad Ahmad","Reproduction"],["20000628","Muhammad Aslam","Reproduction"],["20009516","Muhammad Azam","Reproduction"],["20009681","Muhammad Hamza","Reproduction"],["20003049","Muhammad Imran","Reproduction"],["20008909","Muhammad Irfan","Reproduction"],["992730","Muhammad Khubaib","Reproduction"],["20007352","Naeem Akhtar","Reproduction"],["20000633","Naveed Ahmad","Reproduction"],["20000636","Rehan Ali","Reproduction"],["20007842","Saifal Suleman","Reproduction"],["20009749","Sarfraz Ali","Reproduction"],["20000572","Sh.Naeem Ahmad","Reproduction"],["20003783","Shabbir Ali","Reproduction"],["20006574","Shahid","Reproduction"],["20003040","Shehzad Anwer","Reproduction"],["20008662","Sheraz","Reproduction"],["992704","Abdul Aziz","Roto"],["20004040","Ahmad Fayyaz","Roto"],["993748","Amir Azeem","Roto"],["20003378","Amjad Ali","Roto"],["990438","Asad Akhtar","Roto"],["993752","CHAUDHRY NOUMAN ALI","Roto"],["20007992","Ghulam Hassan","Roto"],["993251","Ghulam Qadir","Roto"],["992716","Gulraiz Ahmad","Roto"],["20002198","Ishtiaq Ahmad","Roto"],["20008981","Khalil Ahmad","Roto"],["993749","M Sanaullah","Roto"],["993558","MUHAMMAD ARSLAN KHAN","Roto"],["20009688","Malik Sarfraz Asghar","Roto"],["20003401","Muhammad Asif Iqbal","Roto"],["20008893","Muhammad Atiq","Roto"],["992517","Muhammad Ibrar","Roto"],["20004472","Muhammad Irfan","Roto"],["20005072","Muhammad Javed","Roto"],["20009296","Muhammad Mustafa","Roto"],["20004226","Muhammad Naeem Bhatti","Roto"],["993783","Muhammad Nouman","Roto"],["20008982","Muhammad Shahid","Roto"],["20008892","Muhammad Usman","Roto"],["20009317","Muhammad Waqas","Roto"],["20006454","Muhammad Yousaf Subhani","Roto"],["20007986","Mujahid Javed","Roto"],["20006229","Noman Ahmad","Roto"],["20002220","Saber Hussain","Roto"],["990469","Saif Ullah","Roto"],["993227","Saif Zaman","Roto"],["20002242","Shahid Ali","Roto"],["20003259","Shahzad Alam","Roto"],["20009490","Shujaat Hussain","Roto"],["991040","Sohail Ahmed","Roto"],["20000544","Syed Yawar Hussain Bukhari","Roto"],["20004998","Syed Zeeshan Haider","Roto"],["20005000","Tariq Nazeer","Roto"],["20003648","Tayyab Allah Rakha","Roto"],["20009622","Usama Faryad","Roto"],["993209","Usman Rehman","Roto"],["993290","Waqar Younas","Roto"],["993737","Zarar Hussain","Roto"],["20009621","Zeeshan Ali","Roto"],["20003220","Farhan Naveed","Sales Support Officer"],["20009795","Ameer Hamza Subhani","Shift Supervisor"],["20009781","Muhammad Taha Khalid","Shift Supervisor"],["20009782","Zohiab Liaqat","Shift Supervisor"],["990386","Abad ali","Slitting"],["20002189","Agha Shahzad Karim Ullah","Slitting"],["20006542","Ahmad Saood Anwar","Slitting"],["20009382","Ali Akbar","Slitting"],["993337","Amir Ali","Slitting"],["990572","Amir Butt","Slitting"],["20002202","Arshad Naeem","Slitting"],["993254","Asghar Ali","Slitting"],["20002294","Ashraf Ali","Slitting"],["20004136","Asif Mushtaq","Slitting"],["20002121","Dawood Ahmad","Slitting"],["20004846","Farhan Ramzan","Slitting"],["20004134","Fiaz Ahmed","Slitting"],["20003845","Ghulam Rasool","Slitting"],["993244","Hafiz Atif Rasool","Slitting"],["20005010","Hafiz Muhammad Irfan","Slitting"],["990348","Haroon Rasheed","Slitting"],["991509","Hassan Nawaz","Slitting"],["20002252","Imran Ali","Slitting"],["993072","Imran Ashraf","Slitting"],["20002217","Imtiaz Ali","Slitting"],["20008034","Ishtiaq Ahmed","Slitting"],["992479","Khurram akram","Slitting"],["992378","M Babar Hussain","Slitting"],["990297","M. Azhar","Slitting"],["992086","M. afzal Haneef","Slitting"],["991408","Mohammad Imran","Slitting"],["991300","Mohammad Saleem","Slitting"],["991291","Mohammad Waqas Arif","Slitting"],["20004913","Muddasar Irfan","Slitting"],["20004415","Muddassar Hussain","Slitting"],["20009484","Muhammad Ahmad Khan","Slitting"],["20003433","Muhammad Akram","Slitting"],["990436","Muhammad Asim","Slitting"],["20003780","Muhammad Awais","Slitting"],["993020","Muhammad Awais","Slitting"],["20009090","Muhammad Awais Munir","Slitting"],["20003469","Muhammad Fayyaz","Slitting"],["20003514","Muhammad Jamil","Slitting"],["20002161","Muhammad Javed Iqbal","Slitting"],["991672","Muhammad Kamran Aslam","Slitting"],["20002223","Muhammad Ramzan Aslam","Slitting"],["20003975","Muhammad Saleem","Slitting"],["20003778","Muhammad Sarfraz Rana","Slitting"],["20000513","Muhammad Sarwar","Slitting"],["20002200","Muhammad Shafique","Slitting"],["990354","Muhammad Shafique","Slitting"],["20003492","Muhammad Shahid","Slitting"],["20002250","Muhammad Tariq","Slitting"],["20008864","Muhammad Umer Shahzad","Slitting"],["20002243","Muhammad Yameen","Slitting"],["990349","Muhammad ibrar","Slitting"],["990393","Mushtaq salakhan","Slitting"],["990306","Nadeem pervaiz","Slitting"],["20002227","Naveed Ali","Slitting"],["20002560","S. M. Sabir Imam","Slitting"],["20003516","Salamat Ali","Slitting"],["20004088","Shafiq Ur Rehman","Slitting"],["20002192","Shoukat Ali","Slitting"],["20004413","Syed Baqar Hussain","Slitting"],["20003600","Tanveer Ahmad","Slitting"],["990424","Tariq Ali","Slitting"],["990392","Tariq Ali","Slitting"],["20002139","Tasawar Hussain","Slitting"],["992817","Umair Siddique","Slitting"],["993073","Usman Yousaf","Slitting"],["20007567","Waqas Dawood","Slitting"],["20004086","Hafiz Habib Ur Rehman","Union"],["20004279","Hafiz Muhammad Irfan","Union"],["20002138","Mahmood Ali Rehan","Union"],["20002228","Nadeem Qaiser","Union"]];
+
+/* ---------- preview stand-in (only used when opened outside Google Apps Script) ---------- */
+var Mock=(()=>{const t=iso(new Date());const pw={};const ses={};
+  const ok=v=>new Promise(r=>setTimeout(()=>r(JSON.parse(JSON.stringify(v))),100));const no=m=>Promise.reject(new Error(m));
+  const cfg={sections:["Flexo","Roto","Lamination","Extrusion","Slitting","Finishing","QA","WIP","Planning","Office","WCM"],reasons:["Reliever absent","Reliever on rest","Extra loading","Extra work required","Machine not manned","Training","WCM activity"],approvers:["Imran Aziz Salaria","Iftikhar Alam"],staffPinRequired:false,
+    employees:BUILTIN_EMPLOYEES};
+  let rows=[{id:"R1",submittedAt:t+" 08:10",otDate:t,section:"Roto",comments:"Example request (preview only)",approver:"Imran Aziz Salaria",status:"pending",decidedBy:"",remark:"",decidedAt:"",employees:[{empId:"992704",name:"Abdul Aziz",reason:"Reliever absent",est:4,actual:null}]},
+    {id:"R2",submittedAt:t+" 08:30",otDate:t,section:"Flexo",comments:"",approver:"Iftikhar Alam",status:"pending",decidedBy:"",remark:"",decidedAt:"",employees:[{empId:"20004040",name:"Ahmad Fayyaz",reason:"Extra loading",est:4,actual:null}]}];
+  const who=k=>ses[k];
+  return{getConfig:()=>ok(cfg),approverStatus:()=>ok(cfg.approvers.map(n=>({name:n,hasPassword:!!pw[n]}))),
+    login:(n,p)=>pw[n]===p?(ses["t"+n]=n,ok({token:"t"+n,name:n})):no(pw[n]?"Wrong password.":"No password yet. Choose “Create or reset password”."),
+    createPassword:(n,c,p)=>c!=="PKG-OT-2026"?no("Setup code is wrong."):(pw[n]=p,ses["t"+n]=n,ok({token:"t"+n,name:n})),
+    changePassword:(k,o,n)=>pw[who(k)]!==o?no("Current password is wrong."):(pw[who(k)]=n,ok({token:k,name:who(k)})),
+    logout:()=>ok(true),whoAmI:k=>ok(who(k)||null),
+    getRequests:(f,to)=>ok(rows.filter(r=>(r.otDate>=f&&r.otDate<=to)||r.status==="pending")),
+    submitRequest:p=>{rows.push({...p,id:"R"+Date.now(),submittedAt:t,status:"pending",decidedBy:"",remark:"",decidedAt:"",employees:p.employees.map(e=>({...e,actual:null}))});return ok(1)},
+    decide:(k,ids,s,rm)=>{if(!who(k))return no("Approver login has expired. Log in again.");rows.filter(r=>ids.includes(r.id)).forEach(r=>{r.status=s;r.remark=rm;r.decidedBy=s==="pending"?"":who(k);r.decidedAt=s==="pending"?"":t});return ok(1)},
+    withdraw:id=>{rows=rows.filter(r=>r.id!==id);return ok(1)},
+    saveActuals:(id,a)=>{rows.find(x=>x.id===id).employees.forEach((e,i)=>e.actual=a[i]);return ok(1)},
+    exportReport:()=>ok({xlsxUrl:"#",sheetUrl:"#"})}})();
+</script>
+</body>
+</html>
